@@ -1,0 +1,13 @@
+:root {
+  font-family: 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* Default React/Vite constraints-ah thukkurom */
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  max-width: 100%; /* Ithu thaan antha villain-ah gaali pannum */
+  overflow-x: hidden; /* Keela side scroll-bar varama thadukkum */
+  background-color: #0d0d0d;
+}
