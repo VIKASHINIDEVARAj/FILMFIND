@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { searchMovies } from '../api'; // 👈 PUDHU API IMPORT PANNIRUKEN!
+import { searchMovies } from '../api'; 
 
 const Header = ({ onSearch, onClear, onSignInClick, user, onLogout, onFavClick, onHomeClick, onWatchlistClick, currentView }) => {
   const [query, setQuery] = useState('');
@@ -11,6 +11,7 @@ const Header = ({ onSearch, onClear, onSignInClick, user, onLogout, onFavClick, 
   
   // LIVE SUGGESTIONS STATE 👇
   const [suggestions, setSuggestions] = useState([]);
+  
 
   useEffect(() => {
     const saved = JSON.parse(localStorage.getItem('filmfind_recents')) || [];

@@ -8,20 +8,15 @@ function App() {
   const [trending, setTrending] = useState([]);
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
-  
   const [showAuth, setShowAuth] = useState(false);
   const [user, setUser] = useState(null);
   const [selectedMovie, setSelectedMovie] = useState(null);
   const [trailerKey, setTrailerKey] = useState(null);
-
   const [currentView, setCurrentView] = useState('home'); // 'home', 'favorites', 'watchlist'
   const [myFavs, setMyFavs] = useState([]);
   const [myWatchlist, setMyWatchlist] = useState([]);
-  
   const [isAdded, setIsAdded] = useState(false); 
   const [isWatchlisted, setIsWatchlisted] = useState(false);
-
-  // PREMIUM PAYMENT MODAL STATE
   const [showPayment, setShowPayment] = useState(false);
 
   useEffect(() => {
