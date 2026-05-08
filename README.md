@@ -39,6 +39,8 @@ A highly responsive, Netflix-inspired movie discovery application built using th
 **1. Clone the repository:**
 ```bash
 git clone
+Frontend: https://github.com/VIKASHINIDEVARAj/FILMFIND.git
+Backend:
 
 
 2. Setup Backend:
