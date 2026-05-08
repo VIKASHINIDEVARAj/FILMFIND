@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API = axios.create({ baseURL: 'https://filmfind-api.onrender.com' });
+const API = axios.create({ baseURL: 'https://filmfind-api.onrender.com/api' });
 
 
 export const setAuthToken = (token) => {
