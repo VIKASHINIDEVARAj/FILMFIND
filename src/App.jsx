@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { fetchTrending, searchMovies, addToFavorites, getFavorites, removeFavorite, fetchTrailer, addToWatchlist, getWatchlist, removeFromWatchlist } from './api'; 
+import { fetchTrending, searchMovies, fetchMoviesByGenre , addToFavorites, getFavorites, removeFavorite, fetchTrailer, addToWatchlist, getWatchlist, removeFromWatchlist , fetchSimilarMovies} from './api'; 
 import Header from './components/Header';
 import Auth from './components/Auth';
 import './App.css';
@@ -18,6 +18,8 @@ function App() {
   const [isAdded, setIsAdded] = useState(false); 
   const [isWatchlisted, setIsWatchlisted] = useState(false);
   const [showPayment, setShowPayment] = useState(false);
+  const [recentlyViewed, setRecentlyViewed] = useState([]);
+  const [similarMovies, setSimilarMovies] = useState([]);
 
   useEffect(() => {
     fetchTrending().then(res => setTrending(res.data)).catch(console.error);
@@ -32,11 +34,27 @@ function App() {
     }
   }, [user]);
 
+  useEffect(() => {
+  const savedRecents = JSON.parse(localStorage.getItem('recentMovies')) || [];
+  setRecentlyViewed(savedRecents);
+}, []);
+
+
   const handleSearch = async (query) => {
     try {
       const { data } = await searchMovies(query);
       setSearchResults(data); setIsSearching(true); setCurrentView('home'); 
     } catch (err) { console.error(err); }
+  };
+
+  
+  const handleGenreClick = async (genreId) => {
+    try {
+      const { data } = await fetchMoviesByGenre(genreId);
+      setSearchResults(data.results); 
+      setIsSearching(true); // Search UI-ye use pannikirom! Smart logic!
+      setCurrentView('home'); 
+    } catch (err) { console.error("Genre fetch error:", err); }
   };
 
   const clearSearch = () => { setIsSearching(false); setSearchResults([]); };
@@ -45,7 +63,7 @@ function App() {
 
   const loadFavorites = () => { setCurrentView('favorites'); clearSearch(); };
   
-  // PUDHUSA ADD PANNIRUKEN - Watchlist load panna
+  // Watchlist load panna
   const loadWatchlist = () => { setCurrentView('watchlist'); clearSearch(); };
 
   const handleFavoriteToggle = async () => {
@@ -82,11 +100,26 @@ function App() {
     } catch (err) { console.error(err); }
   };
 
-  const openModal = (movie) => {
+  
+  const openModal = async (movie) => { 
     setIsAdded(myFavs.some(fav => fav.movie.id === movie.id)); 
     setIsWatchlisted(myWatchlist.some(w => w.movie.id === movie.id));
     setTrailerKey(null); 
     setSelectedMovie(movie);
+
+   
+    const filteredRecents = recentlyViewed.filter(m => m.id !== movie.id);
+    const updatedRecents = [movie, ...filteredRecents].slice(0, 10);
+    setRecentlyViewed(updatedRecents);
+    localStorage.setItem('recentMovies', JSON.stringify(updatedRecents));
+
+    
+    try {
+      const { data } = await fetchSimilarMovies(movie.id);
+      setSimilarMovies(data.results.slice(0, 6)); // Top 6 padangala mattum edukkura
+    } catch (err) {
+      console.error("Failed to fetch similar movies", err);
+    }
   };
 
   if (!user) {
@@ -107,9 +140,10 @@ function App() {
         user={user} 
         onLogout={handleLogout} 
         onFavClick={loadFavorites} 
-        onHomeClick={() => setCurrentView('home')} 
+        onHomeClick={() => { setCurrentView('home'); clearSearch(); }} 
         onWatchlistClick={loadWatchlist} 
-        currentView={currentView} /* 👈 INTHA OREY ORU VAARTHAIYA LAST LA ADD PANNU */
+        currentView={currentView}
+        isSearching={isSearching} 
       />
       
       {/* RENDER VIEWS */}
@@ -151,7 +185,36 @@ function App() {
               </div>
             </div>
           )}
+
+          {trending.length > 0 && (
+          <div className="genre-container" style={{ display: 'flex', gap: '15px', justifyContent: 'center', padding: '20px', flexWrap: 'wrap' }}>
+            <button onClick={() => handleGenreClick(28)} style={{ padding: '10px 20px', borderRadius: '20px', background: '#333', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}> Action</button>
+            <button onClick={() => handleGenreClick(35)} style={{ padding: '10px 20px', borderRadius: '20px', background: '#333', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}> Comedy</button>
+            <button onClick={() => handleGenreClick(27)} style={{ padding: '10px 20px', borderRadius: '20px', background: '#333', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}> Horror</button>
+            <button onClick={() => handleGenreClick(10749)} style={{ padding: '10px 20px', borderRadius: '20px', background: '#333', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}> Romance</button>
+            <button onClick={() => handleGenreClick(878)} style={{ padding: '10px 20px', borderRadius: '20px', background: '#333', color: '#fff', border: 'none', cursor: 'pointer', fontWeight: 'bold' }}> Sci-Fi</button>
+          </div>
+          )}
           <div className="movie-row"><h2 className="row-title">Trending Now</h2><div className="row-posters">{trending.slice(1, 15).map(movie => (<img key={movie.id} src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`} alt={movie.title} className="row-poster" onClick={() => openModal(movie)} />))}</div></div>
+
+          
+          {/* ✨ THE CORRECT RECENTLY VIEWED ROW */}
+          {recentlyViewed.length > 0 && (
+            <div className="movie-row">
+              <h2 className="row-title">Recently Viewed 🕒</h2>
+              <div className="row-posters">
+                {recentlyViewed.map(movie => (
+                  <img 
+                    key={movie.id} 
+                    src={`https://image.tmdb.org/t/p/w300${movie.poster_path}`} 
+                    alt={movie.title} 
+                    className="row-poster" 
+                    onClick={() => openModal(movie)} 
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </>
       )}
 
@@ -160,12 +223,19 @@ function App() {
         <div className="modal-overlay" onClick={() => setSelectedMovie(null)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <button className="close-modal" onClick={() => setSelectedMovie(null)}>✖</button>
+            
+            {/* 1. Trailer / Backdrop Section */}
             {trailerKey ? (
-              <div className="video-container" style={{ height: '400px', backgroundColor: '#000' }}><iframe width="100%" height="100%" src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1`} title="Trailer" frameBorder="0" allowFullScreen></iframe></div>
+              <div className="video-container" style={{ height: '400px', backgroundColor: '#000' }}>
+                <iframe width="100%" height="100%" src={`https://www.youtube.com/embed/${trailerKey}?autoplay=1`} title="Trailer" frameBorder="0" allowFullScreen></iframe>
+              </div>
             ) : (
-              <div className="modal-backdrop-container" style={{ backgroundImage: `url(https://image.tmdb.org/t/p/original${selectedMovie.backdrop_path})` }}><div className="modal-vignette"></div></div>
+              <div className="modal-backdrop-container" style={{ backgroundImage: `url(https://image.tmdb.org/t/p/original${selectedMovie.backdrop_path})` }}>
+                <div className="modal-vignette"></div>
+              </div>
             )}
             
+            {/* 2. Movie Info & Buttons Section */}
             <div className="modal-info">
               <h2>{selectedMovie.title}</h2>
               <p style={{ marginBottom: '20px' }}>{selectedMovie.overview}</p>
@@ -173,7 +243,6 @@ function App() {
               <div className="modal-actions">
                 {!trailerKey && <button className="play-btn" onClick={handlePlayTrailer}>▶ Play Trailer</button>}
                 
-                {/* 🐛 INVISIBLE BUG FIXED 👇 */}
                 <button 
                   className="fav-btn" 
                   onClick={handleFavoriteToggle} 
@@ -194,7 +263,30 @@ function App() {
                   📥 Download (Premium)
                 </button>
               </div>
-            </div>
+            </div> 
+
+            
+            {similarMovies.length > 0 && (
+              <div className="similar-movies-section" style={{ width: '100%', padding: '0 20px 20px 20px', marginTop: '10px', borderTop: '1px solid #333', paddingTop: '20px' }}>
+                <h3 style={{ marginBottom: '15px', color: '#fff' }}>More Like This 🍿</h3>
+                <div style={{ display: 'flex', gap: '10px', overflowX: 'auto', paddingBottom: '10px' }}>
+                  {similarMovies.map(simMovie => (
+                    simMovie.poster_path && (
+                      <img 
+                        key={simMovie.id} 
+                        src={`https://image.tmdb.org/t/p/w200${simMovie.poster_path}`} 
+                        alt={simMovie.title} 
+                        style={{ width: '130px', borderRadius: '5px', cursor: 'pointer', transition: 'transform 0.2s' }}
+                        onClick={() => openModal(simMovie)} 
+                        onMouseOver={(e) => e.target.style.transform = 'scale(1.05)'}
+                        onMouseOut={(e) => e.target.style.transform = 'scale(1)'}
+                      />
+                    )
+                  ))}
+                </div>
+              </div>
+            )}
+            
           </div>
         </div>
       )}

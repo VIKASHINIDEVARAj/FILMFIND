@@ -5,31 +5,31 @@ const Auth = ({ onLoginSuccess, onClose }) => {
   const [isLogin, setIsLogin] = useState(true);
   const [formData, setFormData] = useState({ name: '', email: '', password: '' });
   const [message, setMessage] = useState('');
-  
-  // ✨ 1. PUDHU STATE INGA IRUKKU
   const [showPassword, setShowPassword] = useState(false); 
+  const [isLoading, setIsLoading] = useState(false); 
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e) => {
+ const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true); //  loading start 
     try {
       if (isLogin) {
-        // LOGIN logic
         const { data } = await loginUser({ email: formData.email, password: formData.password });
         localStorage.setItem('token', data.token); 
         setAuthToken(data.token); 
         onLoginSuccess(data.user); 
       } else {
-        // REGISTER logic
         await registerUser(formData);
         setMessage('Registration successful! Please login. 🎉');
-        setIsLogin(true); // Switch to login screen
+        setIsLogin(true); 
       }
     } catch (err) {
       setMessage(err.response?.data?.message || 'Something went wrong!');
+    } finally {
+      setIsLoading(false); 
     }
   };
 
@@ -73,8 +73,9 @@ const Auth = ({ onLoginSuccess, onClose }) => {
           </div>
           {/* ✨ PASSWORD FIELD MAGIC END */}
           
-          <button type="submit" className="auth-submit-btn">
-            {isLogin ? 'Sign In' : 'Sign Up'}
+         
+          <button type="submit" className="auth-submit-btn" disabled={isLoading}>
+            {isLoading ? 'Wait⏳' : (isLogin ? 'Sign In' : 'Sign Up')}
           </button>
         </form>
 

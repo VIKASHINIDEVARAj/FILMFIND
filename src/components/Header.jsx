@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect , useRef } from 'react';
 import { searchMovies } from '../api'; 
 
-const Header = ({ onSearch, onClear, onSignInClick, user, onLogout, onFavClick, onHomeClick, onWatchlistClick, currentView }) => {
+const Header = ({ onSearch, onClear, onSignInClick, user, onLogout, onFavClick, onHomeClick, onWatchlistClick, currentView , isSearching}) => {
   const [query, setQuery] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [isLightMode, setIsLightMode] = useState(false);
@@ -11,6 +11,18 @@ const Header = ({ onSearch, onClear, onSignInClick, user, onLogout, onFavClick, 
   
   // LIVE SUGGESTIONS STATE 👇
   const [suggestions, setSuggestions] = useState([]);
+  const menuRef = useRef(null); // Menu track 
+
+  // ✨ SDE MAGIC: Click Outside Listener
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setDropdownOpen(false); // Veliya click panna close pannidu
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
   
 
   useEffect(() => {
@@ -59,7 +71,7 @@ const Header = ({ onSearch, onClear, onSignInClick, user, onLogout, onFavClick, 
   return (
     <header className="navbar">
       <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-        {currentView !== 'home' && (
+        {(currentView !== 'home' || query !== '' || isSearching) && (
           <button onClick={() => { setQuery(''); onClear(); onHomeClick(); }} className="back-btn" title="Go Back">⬅️</button>
         )}
         <div className="logo" onClick={() => { setQuery(''); onClear(); onHomeClick(); }} style={{ cursor: 'pointer' }}>
@@ -111,10 +123,12 @@ const Header = ({ onSearch, onClear, onSignInClick, user, onLogout, onFavClick, 
         </div>
 
         {user ? (
-          <div className="profile-menu">
+          <div className="profile-menu" ref={menuRef}> 
             <button onClick={toggleTheme} className="theme-toggle-btn" title="Toggle Theme">{isLightMode ? '🌙' : '☀️'}</button>
             <span className="profile-name">Hi, {user.name}</span>
             <button className="kebab-btn" onClick={() => setDropdownOpen(!dropdownOpen)}>⋮</button>
+
+            
 
             {dropdownOpen && (
               <div className="profile-dropdown">
